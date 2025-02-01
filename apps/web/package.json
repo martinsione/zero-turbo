@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc -b && vite build",
     "dev": "vite",
-    "typecheck": "tsc"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "react": "^19.0.0",
