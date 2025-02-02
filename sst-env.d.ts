@@ -5,40 +5,6 @@
 
 declare module "sst" {
   export interface Resource {
-    "bucket": {
-      "name": string
-      "type": "sst.aws.Bucket"
-    }
-    "database": {
-      "database": string
-      "host": string
-      "password": string
-      "port": number
-      "type": "sst.aws.Postgres"
-      "username": string
-    }
-    "email": {
-      "configSet": string
-      "sender": string
-      "type": "sst.aws.Email"
-    }
-    "openauth": {
-      "type": "sst.aws.Auth"
-      "url": string
-    }
-    "vpc": {
-      "bastion": string
-      "type": "sst.aws.Vpc"
-    }
-    "web": {
-      "type": "sst.aws.StaticSite"
-      "url": string
-    }
-    "zero-view-syncer": {
-      "service": string
-      "type": "sst.aws.Service"
-      "url": string
-    }
   }
 }
 /// <reference path="sst-env.d.ts" />

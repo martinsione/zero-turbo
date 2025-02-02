@@ -3,41 +3,39 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-function createDNS() {
-  const zone = cloudflare.getZoneOutput({ name: "martinsione.com" });
-
+function createDNS(domain: string) {
   const stage = $app.stage;
-  const base = "zeroturbo.martinsione.com";
-  const domain = { production: base }[stage] || `${stage}.${base}`;
 
-  return { domain, zone };
+  return {
+    domain: { production: domain }[stage] || `${stage}.${domain}`,
+    dns: sst.cloudflare.dns(),
+  };
 }
 
 /**
  * Serverless deployment, pretty much free
  */
 function createAuth({
-  domain,
   database,
+  dns,
   email,
 }: {
-  /**
-   * APP's domain
-   */
-  domain: string;
   database: sst.aws.Postgres;
+  dns: ReturnType<typeof createDNS>;
   email: sst.aws.Email;
 }) {
   const auth = new sst.aws.Auth("openauth", {
     domain: {
-      name: `openauth.${domain}`,
-      dns: sst.cloudflare.dns({ override: true }),
+      name: `openauth.${dns.domain}`,
+      dns: dns.dns,
     },
     issuer: {
       link: [database, email],
       handler: "apps/auth/src/index.handler",
       environment: {
-        AUTH_FRONTEND_URL: $dev ? "http://localhost:3000" : `https://${domain}`,
+        AUTH_FRONTEND_URL: $dev
+          ? "http://localhost:3000"
+          : `https://${dns.domain}`,
       },
     },
   });
@@ -49,13 +47,13 @@ function createZero({
   database,
   bucket,
   auth,
-  domain,
+  dns,
 }: {
   cluster: sst.aws.Cluster;
   database: sst.aws.Postgres;
   bucket: sst.aws.Bucket;
   auth: sst.aws.Auth;
-  domain: string;
+  dns: ReturnType<typeof createDNS>;
 }) {
   const conn = $interpolate`postgresql://${database.username}:${database.password}@${database.host}/${database.database}`;
 
@@ -164,8 +162,8 @@ function createZero({
     loadBalancer: {
       public: true,
       domain: {
-        name: `zero.${domain}`,
-        dns: sst.cloudflare.dns({ override: true }),
+        name: `zero.${dns.domain}`,
+        dns: dns.dns,
       },
       ports: [
         { listen: "80/http", forward: "4848/http" },
@@ -202,11 +200,11 @@ function createZero({
 }
 
 function createFrontend({
-  domain,
+  dns,
   auth,
   zero,
 }: {
-  domain: string;
+  dns: ReturnType<typeof createDNS>;
   auth: sst.aws.Auth;
   zero: ReturnType<typeof createZero>;
 }) {
@@ -217,8 +215,8 @@ function createFrontend({
       command: "pnpm run build",
     },
     domain: {
-      name: domain,
-      dns: sst.cloudflare.dns({ override: true }),
+      name: dns.domain,
+      dns: dns.dns,
     },
     environment: {
       VITE_AUTH_URL: auth.url,
@@ -247,7 +245,7 @@ export default $config({
     };
   },
   async run() {
-    const { domain, zone } = createDNS();
+    const dns = createDNS("zeroturbo.martinsione.com");
 
     const bucket = new sst.aws.Bucket("bucket", { public: false });
 
@@ -281,12 +279,12 @@ export default $config({
     const cluster = new sst.aws.Cluster("cluster", { vpc });
 
     const email = new sst.aws.Email("email", {
-      sender: domain,
-      dns: sst.cloudflare.dns({ override: true }),
+      sender: dns.domain,
+      dns: dns.dns,
     });
 
-    const auth = createAuth({ database, domain, email });
-    const zero = createZero({ cluster, database, bucket, auth, domain });
-    const frontend = createFrontend({ domain, auth, zero });
+    const auth = createAuth({ database, dns, email });
+    const zero = createZero({ cluster, database, bucket, auth, dns });
+    const frontend = createFrontend({ dns, auth, zero });
   },
 });
