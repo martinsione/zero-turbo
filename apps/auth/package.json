@@ -1,0 +1,21 @@
+{
+  "name": "@repo/auth",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aws-sdk/client-sesv2": "3.740.0",
+    "@openauthjs/openauth": "0.3.6",
+    "hono": "4.6.20",
+    "postgres": "3.4.5",
+    "zod": "3.24.1"
+  },
+  "devDependencies": {
+    "@repo/tsconfig": "workspace:*",
+    "typescript": "5.7.3"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@repo/zero",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "zero-build-schema -p src/schema.ts && zero-cache",
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./react": "./src/react.ts",
+    "./schema": "./src/schema.ts"
+  },
+  "dependencies": {
+    "@rocicorp/zero": "0.13.2025013101"
+  },
+  "devDependencies": {
+    "@repo/tsconfig": "workspace:*",
+    "typescript": "5.7.3"
+  }
+}

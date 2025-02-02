@@ -2,21 +2,24 @@
   "name": "zero-turbo",
   "private": true,
   "engines": {
-    "node": ">=22.10.0",
+    "node": ">=20.0.0",
     "pnpm": "^9.15.2"
   },
   "packageManager": "pnpm@9.15.2",
   "scripts": {
-    "dev": "turbo run dev",
     "clean": "git clean -xdf node_modules",
+    "dev": "sst dev",
     "lint": "biome check --write .",
     "postinstall": "pnpm dlx sherif@latest",
     "prepare": "husky",
+    "sso": "aws sso login --sso-session=martin-personal",
     "typecheck": "turbo run typecheck"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "@types/aws-lambda": "8.10.147",
     "husky": "9.1.7",
+    "sst": "3.7.1",
     "turbo": "2.4.0"
   }
 }

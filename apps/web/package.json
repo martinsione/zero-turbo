@@ -8,8 +8,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@repo/zero": "workspace:*",
+    "nanoid": "5.0.9",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-router": "^7.1.5",
+    "zod": "3.24.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.3",

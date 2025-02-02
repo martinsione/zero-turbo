@@ -1,0 +1,95 @@
+{
+  "permissions": {
+    "user": {},
+    "workspace": {}
+  },
+  "schema": {
+    "version": 1,
+    "tables": {
+      "workspace": {
+        "name": "workspace",
+        "columns": {
+          "id": {
+            "type": "string",
+            "optional": false,
+            "customType": null
+          },
+          "slug": {
+            "type": "string",
+            "optional": false,
+            "customType": null
+          },
+          "time_created": {
+            "type": "number",
+            "optional": false,
+            "customType": null
+          },
+          "time_deleted": {
+            "type": "number",
+            "optional": true,
+            "customType": null
+          }
+        },
+        "primaryKey": ["id"]
+      },
+      "user": {
+        "name": "user",
+        "columns": {
+          "id": {
+            "type": "string",
+            "optional": false,
+            "customType": null
+          },
+          "workspace_id": {
+            "type": "string",
+            "optional": false,
+            "customType": null
+          },
+          "email": {
+            "type": "string",
+            "optional": false,
+            "customType": null
+          },
+          "time_seen": {
+            "type": "number",
+            "optional": true,
+            "customType": null
+          },
+          "time_created": {
+            "type": "number",
+            "optional": false,
+            "customType": null
+          },
+          "time_deleted": {
+            "type": "number",
+            "optional": true,
+            "customType": null
+          }
+        },
+        "primaryKey": ["workspace_id", "id"]
+      }
+    },
+    "relationships": {
+      "workspace": {
+        "users": [
+          {
+            "sourceField": ["id"],
+            "destField": ["workspace_id"],
+            "destSchema": "user",
+            "cardinality": "many"
+          }
+        ]
+      },
+      "user": {
+        "workspace": [
+          {
+            "sourceField": ["workspace_id"],
+            "destField": ["id"],
+            "destSchema": "workspace",
+            "cardinality": "one"
+          }
+        ]
+      }
+    }
+  }
+}
