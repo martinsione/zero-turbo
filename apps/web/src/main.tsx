@@ -3,30 +3,36 @@ import { ZeroProvider } from "@repo/zero/react";
 import { schema } from "@repo/zero/schema";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter } from "react-router";
-import App from "./App";
-import "./index.css";
+import { BrowserRouter, Route, Routes } from "react-router";
+import { AuthProvider } from "~/context/auth";
+import { env } from "~/env";
+import "~/styles/index.css";
 
-const { PROD, VITE_ZERO_URL } = import.meta.env;
+import Auth from "./pages/auth";
+import Home from "./pages/home";
 
 const zero = new Zero({
   userID: "anon",
   auth: () => {
     return undefined;
   },
-  kvStore: PROD ? "idb" : "mem",
+  kvStore: env.PROD ? "idb" : "mem",
   schema,
-  // biome-ignore lint/style/noNonNullAssertion: <explanation>
-  server: VITE_ZERO_URL!,
+  server: env.VITE_ZERO_URL,
 });
 
 // biome-ignore lint/style/noNonNullAssertion: <explanation>
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ZeroProvider zero={zero}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </ZeroProvider>
+    <AuthProvider>
+      <ZeroProvider zero={zero}>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/auth" element={<Auth />} />
+          </Routes>
+        </BrowserRouter>
+      </ZeroProvider>
+    </AuthProvider>
   </StrictMode>,
 );

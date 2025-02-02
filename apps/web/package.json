@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@openauthjs/openauth": "0.3.6",
     "@repo/zero": "workspace:*",
     "nanoid": "5.0.9",
     "react": "^19.0.0",

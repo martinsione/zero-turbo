@@ -26,6 +26,12 @@ importers:
 
   apps/api:
     dependencies:
+      '@openauthjs/openauth':
+        specifier: 0.3.6
+        version: 0.3.6(arctic@2.3.4)(hono@4.6.20)
+      '@repo/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       hono:
         specifier: 4.6.20
         version: 4.6.20
@@ -76,6 +82,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@openauthjs/openauth':
+        specifier: 0.3.6
+        version: 0.3.6(arctic@2.3.4)(hono@4.6.20)
       '@repo/zero':
         specifier: workspace:*
         version: link:../../packages/zero

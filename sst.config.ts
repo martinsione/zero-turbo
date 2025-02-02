@@ -12,6 +12,47 @@ function createDNS(domain: string) {
   };
 }
 
+function createAPI({
+  auth,
+  bucket,
+  database,
+  email,
+  dns,
+}: {
+  auth: sst.aws.Auth;
+  bucket: sst.aws.Bucket;
+  database: sst.aws.Postgres;
+  email: sst.aws.Email;
+  dns: ReturnType<typeof createDNS>;
+}) {
+  const api = new sst.aws.Function("Api", {
+    handler: "apps/api/src/index.handler",
+    link: [auth, bucket, database, email],
+    nodejs: { install: ["source-map"] },
+    timeout: "2 minutes",
+    url: true,
+    environment: {
+      ...($dev
+        ? {
+            /*
+             * @see https://discord.com/channels/983865673656705025/1230452755005702206/1230452755005702206
+             */
+            NODE_TLS_REJECT_UNAUTHORIZED: "0",
+          }
+        : {}),
+    },
+  });
+
+  const router = new sst.aws.Router("ApiRouter", {
+    routes: {
+      "/*": api.url,
+    },
+    domain: { name: `api.${dns.domain}`, dns: dns.dns },
+  });
+
+  return router;
+}
+
 /**
  * Serverless deployment, pretty much free
  */
@@ -26,16 +67,21 @@ function createAuth({
 }) {
   const auth = new sst.aws.Auth("openauth", {
     domain: {
-      name: `openauth.${dns.domain}`,
+      name: `auth.${dns.domain}`,
       dns: dns.dns,
     },
     issuer: {
       link: [database, email],
       handler: "apps/auth/src/index.handler",
       environment: {
-        AUTH_FRONTEND_URL: $dev
-          ? "http://localhost:3000"
-          : `https://${dns.domain}`,
+        ...($dev
+          ? {
+              /*
+               * @see https://discord.com/channels/983865673656705025/1230452755005702206/1230452755005702206
+               */
+              NODE_TLS_REJECT_UNAUTHORIZED: "0",
+            }
+          : {}),
       },
     },
   });
@@ -58,7 +104,6 @@ function createZero({
   const conn = $interpolate`postgresql://${database.username}:${database.password}@${database.host}/${database.database}`;
 
   const env = {
-    LOG_LEVEL: "debug",
     NO_COLOR: "1",
     ZERO_CVR_MAX_CONNS: "10",
     ZERO_UPSTREAM_MAX_CONNS: "10",
@@ -199,16 +244,18 @@ function createZero({
   return zero;
 }
 
-function createFrontend({
-  dns,
+function createWeb({
+  api,
   auth,
+  dns,
   zero,
 }: {
-  dns: ReturnType<typeof createDNS>;
+  api: ReturnType<typeof createAPI>;
   auth: sst.aws.Auth;
+  dns: ReturnType<typeof createDNS>;
   zero: ReturnType<typeof createZero>;
 }) {
-  new sst.aws.StaticSite("web", {
+  const site = new sst.aws.StaticSite("web", {
     path: "./apps/web",
     build: {
       output: "./dist",
@@ -219,11 +266,14 @@ function createFrontend({
       dns: dns.dns,
     },
     environment: {
+      VITE_API_URL: api.url,
       VITE_AUTH_URL: auth.url,
       VITE_STAGE: $app.stage,
       VITE_ZERO_URL: zero.url,
     },
   });
+
+  return site;
 }
 
 export default $config({
@@ -284,7 +334,15 @@ export default $config({
     });
 
     const auth = createAuth({ database, dns, email });
-    const zero = createZero({ cluster, database, bucket, auth, dns });
-    const frontend = createFrontend({ dns, auth, zero });
+    const api = createAPI({ auth, bucket, database, email, dns });
+    const zero = createZero({ auth, bucket, cluster, database, dns });
+    const web = createWeb({ api, auth, dns, zero });
+
+    return {
+      api: api.url,
+      auth: auth.url,
+      web: web.url,
+      zero: zero.url,
+    };
   },
 });
