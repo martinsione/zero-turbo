@@ -13,6 +13,9 @@ function createDNS() {
   return { domain, zone };
 }
 
+/**
+ * Serverless deployment, pretty much free
+ */
 function createAuth({
   domain,
   database,
@@ -125,13 +128,24 @@ function createZero({
         // },
       });
 
+  /**
+   * @see https://sst.dev/docs/component/aws/cluster#cost
+   * 1 month = ~720hr
+   * IPV4 address       = $0.005/hr -> times 720 -> $3.6
+   * arm64: vCPU        = $0.03238/hr -> times 720 -> times vCPU (0.25) -> $5,8284
+   * arm64: memory (GB) = $0.00356/hr -> times 720 -> times memory (0.5) -> $1,2816
+   * Spot is ~70% cheaper so cheapest option is ~$6/mo
+   *
+   * Free for dev
+   */
   const zero = cluster.addService("zero-view-syncer", {
     dev: {
       command: "pnpm dev",
       directory: "packages/zero",
       url: "http://localhost:4848",
     },
-    ...($dev ? { capacity: "spot" } : {}),
+    // ...($dev ? { capacity: "spot" } : {}),
+    capacity: "spot", // 70% cheaper but less performant
     architecture: "arm64",
     cpu: "0.25 vCPU",
     memory: "0.5 GB",
@@ -233,12 +247,22 @@ export default $config({
     };
   },
   async run() {
+    const { domain, zone } = createDNS();
+
     const bucket = new sst.aws.Bucket("bucket", { public: false });
 
     const vpc = $dev
-      ? new sst.aws.Vpc("vpc", { az: 2, bastion: true, nat: "ec2" })
+      ? new sst.aws.Vpc("vpc", {
+          az: 2,
+          bastion: true,
+          nat: "ec2" /** $6/mo - @see https://sst.dev/docs/component/aws/vpc#nat */,
+        })
       : new sst.aws.Vpc("vpc", { az: 2 });
 
+    /**
+     * Default `db.t4g.micro`, free tier or $14/mo ($22/mo if proxy is enabled)
+     * @see https://sst.dev/docs/component/aws/postgres#cost
+     */
     const database = new sst.aws.Postgres("database", {
       vpc,
       transform: {
@@ -249,11 +273,6 @@ export default $config({
               value: "1",
               applyMethod: "pending-reboot",
             },
-            // {
-            //   name: "max_slot_wal_keep_size",
-            //   value: "10240",
-            //   applyMethod: "pending-reboot",
-            // },
           ],
         },
       },
@@ -261,9 +280,7 @@ export default $config({
 
     const cluster = new sst.aws.Cluster("cluster", { vpc });
 
-    const { domain, zone } = createDNS();
-
-    const email = new sst.aws.Email("Email", {
+    const email = new sst.aws.Email("email", {
       sender: domain,
       dns: sst.cloudflare.dns({ override: true }),
     });

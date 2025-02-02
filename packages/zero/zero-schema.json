@@ -19,6 +19,11 @@
             "optional": false,
             "customType": null
           },
+          "name": {
+            "type": "string",
+            "optional": false,
+            "customType": null
+          },
           "time_created": {
             "type": "number",
             "optional": false,
@@ -30,7 +35,9 @@
             "customType": null
           }
         },
-        "primaryKey": ["id"]
+        "primaryKey": [
+          "id"
+        ]
       },
       "user": {
         "name": "user",
@@ -66,15 +73,22 @@
             "customType": null
           }
         },
-        "primaryKey": ["workspace_id", "id"]
+        "primaryKey": [
+          "workspace_id",
+          "id"
+        ]
       }
     },
     "relationships": {
       "workspace": {
         "users": [
           {
-            "sourceField": ["id"],
-            "destField": ["workspace_id"],
+            "sourceField": [
+              "id"
+            ],
+            "destField": [
+              "workspace_id"
+            ],
             "destSchema": "user",
             "cardinality": "many"
           }
@@ -83,8 +97,12 @@
       "user": {
         "workspace": [
           {
-            "sourceField": ["workspace_id"],
-            "destField": ["id"],
+            "sourceField": [
+              "workspace_id"
+            ],
+            "destField": [
+              "id"
+            ],
             "destSchema": "workspace",
             "cardinality": "one"
           }

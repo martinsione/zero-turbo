@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "ignore": ["pnpm-lock.yaml", "sst-env.d.ts"]
+    "ignore": ["pnpm-lock.yaml", "sst-env.d.ts", "zero-schema.json"]
   },
   "formatter": {
     "enabled": true,

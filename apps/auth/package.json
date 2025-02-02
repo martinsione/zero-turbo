@@ -10,7 +10,9 @@
   "dependencies": {
     "@aws-sdk/client-sesv2": "3.740.0",
     "@openauthjs/openauth": "0.3.6",
+    "@repo/db": "workspace:*",
     "hono": "4.6.20",
+    "nanoid": "5.0.9",
     "postgres": "3.4.5",
     "zod": "3.24.1"
   },

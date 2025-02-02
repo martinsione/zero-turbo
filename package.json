@@ -8,9 +8,12 @@
   "packageManager": "pnpm@9.15.2",
   "scripts": {
     "clean": "git clean -xdf node_modules",
+    "db": "pnpm --filter @repo/db drizzle",
     "dev": "sst dev",
-    "lint": "biome check --write .",
-    "postinstall": "pnpm dlx sherif@latest",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "lint:ws": "pnpm dlx sherif@latest",
+    "postinstall": "pnpm lint:ws",
     "prepare": "husky",
     "sso": "aws sso login --sso-session=martin-personal",
     "typecheck": "turbo run typecheck"

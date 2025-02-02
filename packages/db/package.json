@@ -1,24 +1,23 @@
 {
-  "name": "@repo/zero",
+  "name": "@repo/db",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "build": "zero-build-schema -p src/schema.ts",
-    "dev": "zero-cache-dev -p src/schema.ts",
-    "start": "zero-cache",
+    "drizzle": "sst shell -- drizzle-kit",
     "typecheck": "tsc --noEmit"
   },
   "exports": {
-    ".": "./src/index.ts",
-    "./react": "./src/react.ts",
+    "./client": "./src/client.ts",
     "./schema": "./src/schema.ts"
   },
   "dependencies": {
-    "@rocicorp/zero": "0.13.2025013101"
+    "drizzle-orm": "^0.39.1",
+    "postgres": "3.4.5"
   },
   "devDependencies": {
     "@repo/tsconfig": "workspace:*",
+    "drizzle-kit": "0.30.4",
     "typescript": "5.7.3"
   }
 }

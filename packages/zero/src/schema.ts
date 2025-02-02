@@ -1,7 +1,6 @@
 import {
   createSchema,
   definePermissions,
-  json,
   number,
   relationships,
   string,
@@ -17,6 +16,7 @@ const workspace = table("workspace")
   .columns({
     id: string(),
     slug: string(),
+    name: string(),
     ...timestamps,
   })
   .primaryKey("id");

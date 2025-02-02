@@ -2,32 +2,26 @@ import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 import { issuer } from "@openauthjs/openauth";
 import { CodeProvider } from "@openauthjs/openauth/provider/code";
 import { createSubjects } from "@openauthjs/openauth/subject";
+import { db, eq, schema } from "@repo/db/client";
 import { handle } from "hono/aws-lambda";
-import postgres from "postgres";
+import { nanoid } from "nanoid";
 import { Resource } from "sst";
 import { z } from "zod";
 
-const pg = postgres({
-  idle_timeout: 30000,
-  connect_timeout: 30000,
-  host: Resource.database.host,
-  database: Resource.database.database,
-  user: Resource.database.username,
-  password: Resource.database.password,
-  port: Resource.database.port,
-  max: Number.parseInt(process.env.POSTGRES_POOL_MAX || "1"),
-});
-
 const Account = {
-  fromEmail: async ({ email }: { email: string }) => {
-    const result = await pg`SELECT id FROM accounts WHERE email = ${email}`;
-    return result[0]?.id as string | undefined;
-  },
-  create: async ({ email }: { email: string }) => {
-    const result =
-      await pg`INSERT INTO accounts (email) VALUES (${email}) RETURNING id`;
-    return result[0]?.id as string | undefined;
-  },
+  fromEmail: ({ email }: { email: string }) =>
+    db
+      .select()
+      .from(schema.user)
+      .where(eq(schema.user.email, email))
+      .limit(1)
+      .then((rows) => rows.at(0)?.id),
+  create: ({ email }: { email: string }) =>
+    db
+      .insert(schema.user)
+      .values({ id: nanoid(), email })
+      .returning({ id: schema.user.id })
+      .then((rows) => rows.at(0)?.id),
 };
 
 const FRONTEND_URL = process.env.AUTH_FRONTEND_URL;
@@ -73,7 +67,7 @@ export const handler = handle(
             Destination: {
               ToAddresses: [email],
             },
-            FromEmailAddress: `SST <auth@${Resource.Email.sender}>`,
+            FromEmailAddress: `SST <auth@${Resource.email.sender}>`,
             Content: {
               Simple: {
                 Body: {
@@ -130,7 +124,8 @@ export const handler = handle(
 
       return ctx.subject(
         "account",
-        { accountID: accountID, email },
+        // biome-ignore lint/style/noNonNullAssertion: <explanation>
+        { accountID: accountID!, email },
         { subject: email },
       );
     },

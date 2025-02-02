@@ -3,6 +3,7 @@ import { nanoid } from "nanoid";
 import { useState } from "react";
 
 function CreateUser() {
+  const [workspaceId, setWorkspaceId] = useState("default");
   const [value, setValue] = useState("");
   const z = useZero();
 
@@ -36,9 +37,11 @@ function CreateUser() {
 function App() {
   const z = useZero();
   const [users] = useQuery(z.query.user.limit(10));
+  const [workspaces] = useQuery(z.query.workspace.limit(10));
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-4">
+      <pre>{JSON.stringify(workspaces, null, 2)}</pre>
       <div className="card">
         <CreateUser />
       </div>
