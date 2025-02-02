@@ -9,141 +9,129 @@ import {
 } from "react";
 import { env } from "~/env";
 
-const client = createClient({
-  clientID: "react",
-  issuer: env.VITE_AUTH_URL,
-});
+const client = createClient({ clientID: "react", issuer: env.VITE_AUTH_URL });
+
+/** Replace with a more precise type if you wish */
+type User = { id: string } & Record<string, unknown>;
 
 interface AuthContextType {
-  userId?: string;
-  loaded: boolean;
-  loggedIn: boolean;
-  logout: () => void;
-  login: () => Promise<void>;
   getToken: () => Promise<string | undefined>;
+  isLoading: boolean;
+  signIn: () => Promise<void>;
+  signOut: () => void;
+  user: User | undefined;
 }
 
-const AuthContext = createContext({} as AuthContextType);
+const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState<User | undefined>();
   const initializing = useRef(true);
-  const [loaded, setLoaded] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
-  const token = useRef<string | undefined>(undefined);
-  const [userId, setUserId] = useState<string | undefined>();
+  const accessToken = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    const hash = new URLSearchParams(location.search.slice(1));
-    const code = hash.get("code");
-    const state = hash.get("state");
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
 
-    if (!initializing.current) {
-      return;
-    }
-
+    // Protect against double initialization (e.g. in React Strict Mode)
+    if (!initializing.current) return;
     initializing.current = false;
 
     if (code && state) {
-      callback(code, state);
-      return;
+      handleCallback(code, state);
+    } else {
+      initAuth();
     }
-
-    auth();
   }, []);
 
-  async function auth() {
-    const token = await refreshTokens();
-
-    if (token) {
-      await user();
+  const initAuth = async () => {
+    const newToken = await refreshTokens();
+    if (newToken) {
+      await fetchUser();
     }
+    setIsLoading(true);
+  };
 
-    setLoaded(true);
-  }
-
-  async function refreshTokens() {
+  const refreshTokens = async (): Promise<string | undefined> => {
     const refresh = localStorage.getItem("refresh");
-    if (!refresh) return;
-    const next = await client.refresh(refresh, {
-      access: token.current,
+    if (!refresh) return undefined;
+    const result = await client.refresh(refresh, {
+      access: accessToken.current,
     });
-    if (next.err) return;
-    if (!next.tokens) return token.current;
+    if (result.err) return undefined;
+    if (result.tokens) {
+      accessToken.current = result.tokens.access;
+      localStorage.setItem("refresh", result.tokens.refresh);
+      return result.tokens.access;
+    }
+    return accessToken.current;
+  };
 
-    localStorage.setItem("refresh", next.tokens.refresh);
-    token.current = next.tokens.access;
-    return next.tokens.access;
-  }
-
-  async function getToken() {
-    const token = await refreshTokens();
-
-    if (!token) {
-      await login();
+  const getToken = async () => {
+    const newToken = await refreshTokens();
+    if (!newToken) {
+      await signIn();
       return;
     }
+    return newToken;
+  };
 
-    return token;
-  }
-
-  async function login() {
-    const { challenge, url } = await client.authorize(location.origin, "code", {
-      pkce: true,
-    });
-    sessionStorage.setItem("challenge", JSON.stringify(challenge));
-    location.href = url;
-  }
-
-  async function callback(code: string, state: string) {
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
-    const challenge = JSON.parse(sessionStorage.getItem("challenge")!);
-    if (code) {
-      if (state === challenge.state && challenge.verifier) {
-        const exchanged = await client.exchange(
-          code,
-          location.origin,
-          challenge.verifier,
-        );
-        if (!exchanged.err) {
-          token.current = exchanged.tokens?.access;
-          localStorage.setItem("refresh", exchanged.tokens.refresh);
-        }
-      }
+  const handleCallback = async (code: string, state: string) => {
+    const storedChallenge = sessionStorage.getItem("challenge");
+    if (!storedChallenge) {
       window.location.replace("/");
+      return;
     }
-  }
-
-  async function user() {
-    console.log("user", user, token);
-    const res = await fetch(`${env.VITE_API_URL}/account`, {
-      headers: {
-        Authorization: `Bearer ${token.current}`,
-      },
-    });
-
-    if (res.ok) {
-      setUserId(await res.text());
-      setLoggedIn(true);
+    const challenge = JSON.parse(storedChallenge);
+    if (state === challenge.state && challenge.verifier) {
+      const exchanged = await client.exchange(
+        code,
+        window.location.origin,
+        challenge.verifier,
+      );
+      if (!exchanged.err && exchanged.tokens) {
+        accessToken.current = exchanged.tokens.access;
+        localStorage.setItem("refresh", exchanged.tokens.refresh);
+      }
     }
-  }
-
-  function logout() {
-    localStorage.removeItem("refresh");
-    token.current = undefined;
-
     window.location.replace("/");
-  }
+  };
+
+  const fetchUser = async () => {
+    try {
+      const res = await fetch(`${env.VITE_API_URL}/account`, {
+        headers: { Authorization: `Bearer ${accessToken.current}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data);
+      }
+    } catch {
+      // Handle errors if necessary
+    }
+  };
+
+  const signIn = async () => {
+    const { challenge, url } = await client.authorize(
+      window.location.origin,
+      "code",
+      { pkce: true },
+    );
+    sessionStorage.setItem("challenge", JSON.stringify(challenge));
+    window.location.href = url;
+  };
+
+  const signOut = () => {
+    localStorage.removeItem("refresh");
+    accessToken.current = undefined;
+    window.location.replace("/");
+  };
 
   return (
     <AuthContext.Provider
-      value={{
-        login,
-        logout,
-        userId,
-        loaded,
-        loggedIn,
-        getToken,
-      }}
+      value={{ getToken, isLoading, signIn, signOut, user }}
     >
       {children}
     </AuthContext.Provider>
@@ -151,5 +139,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const auth = useContext(AuthContext);
+  if (!auth) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return auth;
 }

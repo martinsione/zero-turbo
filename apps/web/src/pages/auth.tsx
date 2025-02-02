@@ -15,26 +15,26 @@ function App() {
     setStatus(res.ok ? "success" : "error");
   }
 
-  return !auth.loaded ? (
+  return !auth.isLoading ? (
     <div>Loading...</div>
   ) : (
     <div>
-      {auth.loggedIn ? (
+      {auth.user?.id ? (
         <div>
           <p>
             <span>Logged in</span>
-            {auth.userId && <span> as {auth.userId}</span>}
+            {auth.user?.id && <span> as {JSON.stringify(auth.user)}</span>}
           </p>
           {status !== "" && <p>API call: {status}</p>}
           <button type="button" onClick={callApi}>
             Call API
           </button>
-          <button type="button" onClick={auth.logout}>
+          <button type="button" onClick={auth.signOut}>
             Logout
           </button>
         </div>
       ) : (
-        <button type="button" onClick={auth.login}>
+        <button type="button" onClick={auth.signIn}>
           Login with OAuth
         </button>
       )}
