@@ -14,7 +14,7 @@ function CreateUser() {
         e.preventDefault();
         z.mutate.user.insert({
           id: nanoid(),
-          workspace_id: "default",
+          workspace_id: null,
           time_created: Date.now(),
           email: value,
         });

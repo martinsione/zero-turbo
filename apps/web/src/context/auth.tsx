@@ -9,7 +9,10 @@ import {
 } from "react";
 import { env } from "~/env";
 
-const client = createClient({ clientID: "react", issuer: env.VITE_AUTH_URL });
+export const client = createClient({
+  clientID: "react",
+  issuer: env.VITE_AUTH_URL,
+});
 
 /** Replace with a more precise type if you wish */
 type User = { id: string } & Record<string, unknown>;
@@ -106,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       if (res.ok) {
         const data = await res.json();
+        localStorage.setItem("user", JSON.stringify(data));
         setUser(data);
       }
     } catch {

@@ -13,15 +13,15 @@ const Account = {
   fromEmail: ({ email }: { email: string }) =>
     db
       .select()
-      .from(schema.user)
-      .where(eq(schema.user.email, email))
+      .from(schema.account)
+      .where(eq(schema.account.email, email))
       .limit(1)
       .then((rows) => rows.at(0)?.id),
   create: ({ email }: { email: string }) =>
     db
-      .insert(schema.user)
+      .insert(schema.account)
       .values({ id: nanoid(), email })
-      .returning({ id: schema.user.id })
+      .returning({ id: schema.account.id })
       .then((rows) => rows.at(0)?.id),
 };
 
